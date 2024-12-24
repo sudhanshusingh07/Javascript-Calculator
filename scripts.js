@@ -8,19 +8,11 @@ const calculator = {
 function inputNumber(digit) {
     const { displayValue, waitingForSecondOperand } = calculator;
 
-    if (waitingForSecondOperand === true) {
+    if (waitingForSecondOperand) {
         calculator.displayValue = digit;
         calculator.waitingForSecondOperand = false;
     } else {
-        if (displayValue === '0' && digit !== '.') {
-            calculator.displayValue = digit;
-        } else {
-            calculator.displayValue = displayValue + digit;
-        }
-    }
-
-    if (calculator.displayValue.match(/^-?\d+(\.\d+)?[*-]\d+(\.\d+)?$/)) {
-        handleOperator(calculator.operator);
+        calculator.displayValue = displayValue === '0' ? digit : displayValue + digit;
     }
 }
 
@@ -39,7 +31,7 @@ function handleOperator(nextOperator) {
         return;
     }
 
-    if (firstOperand === null && !isNaN(inputValue)) {
+    if (firstOperand == null && !isNaN(inputValue)) {
         calculator.firstOperand = inputValue;
     } else if (operator) {
         const currentValue = firstOperand || 0;
@@ -49,43 +41,15 @@ function handleOperator(nextOperator) {
     }
 
     calculator.waitingForSecondOperand = true;
-
-    if (nextOperator === '-' && displayValue === '') {
-        calculator.displayValue = '-';
-        return;
-    } else if (nextOperator === '-' && operator && !displayValue.includes('-')) {
-        calculator.displayValue = '-';
-        calculator.operator = nextOperator;
-        return;
-    }
-
-    if (nextOperator === '=') {
-        if (operator === null) {
-            return;
-        }
-        const currentValue = firstOperand || 0;
-        const result = performCalculation[operator](currentValue, inputValue);
-        calculator.displayValue = String(result);
-        calculator.firstOperand = result;
-        calculator.operator = null;
-        calculator.waitingForSecondOperand = false;
-        return;
-    }
-
-    if (operator && displayValue === '') {
-        calculator.operator = nextOperator;
-        return;
-    }
-
     calculator.operator = nextOperator;
 }
 
-let performCalculation = {
+const performCalculation = {
     '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
     '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
     '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
     '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
-    '=': (firstOperand, secondOperand) => secondOperand
+    '=': (firstOperand, secondOperand) => secondOperand,
 };
 
 function resetCalculator() {
@@ -101,54 +65,34 @@ function updateDisplay() {
 }
 
 updateDisplay();
-const keys = document.querySelector('.calculator-keys');
-keys.addEventListener('click', (event) => {
+document.querySelector('.calculator-keys').addEventListener('click', (event) => {
     const target = event.target;
-    if (!target.matches('button')) {
-        return;
-    }
+    if (!target.matches('button')) return;
 
     if (target.classList.contains('operator')) {
         handleOperator(target.value);
-        updateDisplay();
-
-        return;
-    }
-
-    if (target.classList.contains('decimal')) {
+    } else if (target.classList.contains('decimal')) {
         inputDecimal(target.value);
-        updateDisplay();
-
-        return;
-    }
-
-    if (target.classList.contains('all-clear')) {
+    } else if (target.classList.contains('all-clear')) {
         resetCalculator();
-        updateDisplay();
-
-        return;
+    } else {
+        inputNumber(target.value);
     }
-
-    inputNumber(target.value);
     updateDisplay();
 });
 
 document.addEventListener('keydown', (event) => {
-    let key = event.key;
-    if (key >= '0' && key <= '9') {
+    const key = event.key;
+    if (/\d/.test(key)) {
         inputNumber(key);
-        updateDisplay();
+    } else if (['+', '-', '*', '/'].includes(key)) {
+        handleOperator(key);
     } else if (key === '.') {
         inputDecimal(key);
-        updateDisplay();
-    } else if (key === '+' || key === '-' || key === '*' || key === '/') {
-        handleOperator(key);
-        updateDisplay();
     } else if (key === 'Enter') {
         handleOperator('=');
-        updateDisplay();
     } else if (key === 'Escape') {
         resetCalculator();
-        updateDisplay();
     }
+    updateDisplay();
 });
